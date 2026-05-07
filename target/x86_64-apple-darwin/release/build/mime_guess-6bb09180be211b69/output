@@ -1,0 +1,1 @@
+cargo:rustc-env=MIME_TYPES_GENERATED_PATH=/Users/CHENXI/rust/xterm/target/x86_64-apple-darwin/release/build/mime_guess-6bb09180be211b69/out/mime_types_generated.rs

@@ -1,0 +1,4 @@
+cargo:rerun-if-changed=frontend/dist
+cargo:rerun-if-changed=frontend/dist/index.html
+cargo:rerun-if-changed=frontend/dist/assets/index-ChbX-DbX.js
+cargo:rerun-if-changed=frontend/dist/assets/index-Ba2gBU1j.css
