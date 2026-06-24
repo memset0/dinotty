@@ -7,6 +7,7 @@ import type { ClientMsg, ServerMsg } from '../types/protocol'
 import { isTauri, createTransport, type Transport } from './useTransport'
 import { onThemeChange, settings, onTextChange } from './useSettings'
 import { wsUrlWithToken } from './apiBase'
+import { isAppShortcut } from './useKeybindings'
 
 export function isTouchDevice(): boolean {
   return 'ontouchstart' in window || navigator.maxTouchPoints > 0
@@ -134,6 +135,15 @@ export class TerminalInstance {
         brightWhite: v('--color-bright-white') || '#FFFFFF',
       },
     })
+
+    // Let app-level shortcuts (Cmd/Ctrl+T new tab, +D split, …) pass THROUGH the terminal so
+    // App.vue's global keydown handler can act on them. When a pane is focused, xterm otherwise
+    // grabs the keystroke first, sends it to the PTY as a control char (Ctrl+D=EOF closes the
+    // shell, Ctrl+T=^T) and stops propagation, so the shortcut never fires — the root cause of
+    // unreliable shortcuts on Linux (on macOS the ⌘ modifier doesn't collide). Returning false
+    // makes xterm ignore the key (no PTY write, no stopPropagation) so it bubbles to the document
+    // handler. Non-shortcut keys (Ctrl+C/SIGINT, plain typing) are unaffected.
+    this.xterm.attachCustomKeyEventHandler((e) => !(e.type === 'keydown' && isAppShortcut(e)))
 
     this.fitAddon = new FitAddon()
     this.xterm.loadAddon(this.fitAddon)
