@@ -191,6 +191,38 @@ export class TerminalInstance {
       }
     }
 
+    // WebKitGTK + fcitx5 (Linux) duplicate-IME-input fix.
+    // xterm's hidden helper textarea is never cleared between IME commits on WebKitGTK (composition
+    // commits fire no keypress, which is what clears it on Chromium), so it accumulates across
+    // commits ("苹果" → "苹果，" → "苹果，苹果" …). When a punctuation is then entered, fcitx5 fires it
+    // as a micro-composition with NO fresh compositionstart, so CompositionHelper's
+    // _compositionPosition.start still points at the previous word; _finalizeComposition then reads
+    // textarea.substring(prevWordStart + _dataAlreadySent.length) and re-emits the previous word's
+    // tail char plus the punctuation (e.g. "苹果" then "，" → an extra "果，"). Clear the textarea and
+    // reset the composition position after each commit's send so it can't accumulate — the stale
+    // read becomes empty and the duplicate disappears. Scoped to Linux; the macOS WKWebView path
+    // (handled by the _compositionGuard above) is left untouched.
+    if (/Linux/i.test(navigator.platform)) {
+      const comp: any = (this.xterm as any)._core?._compositionHelper
+      if (comp && typeof comp._finalizeComposition === 'function' && !comp.__dinottyImeFix) {
+        comp.__dinottyImeFix = true
+        const origFinalize = comp._finalizeComposition.bind(comp)
+        comp._finalizeComposition = (wait: boolean) => {
+          const r = origFinalize(wait)
+          const reset = () => {
+            try {
+              comp._textarea.value = ''
+              comp._compositionPosition.start = 0
+              comp._compositionPosition.end = 0
+            } catch { /* noop */ }
+          }
+          // wait=true sends in a setTimeout(0); reset after it runs. wait=false sends synchronously.
+          if (wait) setTimeout(reset, 0); else reset()
+          return r
+        }
+      }
+    }
+
     // Register file path link provider
     this.xterm.registerLinkProvider({
       provideLinks: (bufferLineNumber: number, callback: (links: any[] | undefined) => void) => {
