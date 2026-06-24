@@ -21,12 +21,12 @@
         <button class="tcm-item" role="menuitem" @click="onCopy" :disabled="!canCopy">
           <Copy :size="12" class="tcm-icon" />
           <span class="tcm-label">{{ t('terminal.ctxCopy') }}</span>
-          <span class="tcm-hint">{{ isMac ? '⌘C' : 'Ctrl+C' }}</span>
+          <span class="tcm-hint">{{ isMac ? '⌘C' : 'Ctrl+Shift+C' }}</span>
         </button>
         <button class="tcm-item" role="menuitem" @click="onPaste">
           <ClipboardPaste :size="12" class="tcm-icon" />
           <span class="tcm-label">{{ t('terminal.ctxPaste') }}</span>
-          <span class="tcm-hint">{{ isMac ? '⌘V' : 'Ctrl+V' }}</span>
+          <span class="tcm-hint">{{ isMac ? '⌘V' : 'Ctrl+Shift+V' }}</span>
         </button>
         <div class="tcm-sep" />
         <button class="tcm-item" role="menuitem" @click="onBookmark" :disabled="!hasSelection">
@@ -89,7 +89,7 @@ import { ref, computed, nextTick } from 'vue'
 import { Copy, ClipboardPaste, Bookmark, TextSelect, FolderOpen, ExternalLink } from 'lucide-vue-next'
 import { useSettings } from '../../composables/useSettings'
 import { useI18n } from '../../composables/useI18n'
-import { copyToClipboard } from '../../utils/clipboard'
+import { copyToClipboard, readFromClipboard } from '../../utils/clipboard'
 import { randomId } from '../../utils/id'
 
 const props = defineProps<{
@@ -154,7 +154,7 @@ function onCopy() {
 
 async function onPaste() {
   try {
-    const text = await navigator.clipboard.readText()
+    const text = await readFromClipboard()
     if (text) emit('paste', text)
   } catch {
     // clipboard read may be denied

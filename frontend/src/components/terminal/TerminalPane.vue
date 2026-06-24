@@ -2,6 +2,7 @@
   <div
     class="terminal-pane-container"
     @contextmenu.prevent="onContextMenu"
+    @mousedown.capture="onMouseDownCapture"
     @touchstart="onTouchStart"
     @touchmove="onTouchMove"
     @touchend="onTouchEnd"
@@ -95,10 +96,18 @@ function toggleSearch() {
   searchVisible.value = !searchVisible.value
 }
 
+// Right-click can clear the xterm selection before `contextmenu` fires, leaving the menu's
+// copy button disabled. Snapshot the selection in the capture phase (before xterm's own
+// mousedown handler runs) and use it as a fallback.
+let lastMouseDownSelection = ''
+function onMouseDownCapture(e: MouseEvent) {
+  if (e.button === 2 && terminal) lastMouseDownSelection = terminal.getSelection()
+}
+
 function onContextMenu(e: MouseEvent) {
   if (!terminal) return
   if (terminal.isMouseModeEnabled()) return
-  const text = terminal.getSelection()
+  const text = terminal.getSelection() || lastMouseDownSelection
   menuSelectedText.value = text
   menuX.value = e.clientX
   menuY.value = e.clientY

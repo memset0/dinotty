@@ -7,7 +7,8 @@ import type { ClientMsg, ServerMsg } from '../types/protocol'
 import { isTauri, createTransport, type Transport } from './useTransport'
 import { onThemeChange, settings, onTextChange } from './useSettings'
 import { wsUrlWithToken } from './apiBase'
-import { isAppShortcut } from './useKeybindings'
+import { isAppShortcut, IS_MAC } from './useKeybindings'
+import { copyToClipboard, readFromClipboard } from '../utils/clipboard'
 
 export function isTouchDevice(): boolean {
   return 'ontouchstart' in window || navigator.maxTouchPoints > 0
@@ -143,7 +144,21 @@ export class TerminalInstance {
     // unreliable shortcuts on Linux (on macOS the ⌘ modifier doesn't collide). Returning false
     // makes xterm ignore the key (no PTY write, no stopPropagation) so it bubbles to the document
     // handler. Non-shortcut keys (Ctrl+C/SIGINT, plain typing) are unaffected.
-    this.xterm.attachCustomKeyEventHandler((e) => !(e.type === 'keydown' && isAppShortcut(e)))
+    this.xterm.attachCustomKeyEventHandler((e) => {
+      if (e.type !== 'keydown') return true
+      // Ctrl+Shift+C / Ctrl+Shift+V → copy / paste (non-macOS only; macOS keeps its native ⌘C/⌘V).
+      if (!IS_MAC && e.ctrlKey && e.shiftKey && (e.key === 'c' || e.key === 'C')) {
+        const sel = this.xterm?.getSelection()
+        if (sel) copyToClipboard(sel)
+        return false
+      }
+      if (!IS_MAC && e.ctrlKey && e.shiftKey && (e.key === 'v' || e.key === 'V')) {
+        readFromClipboard().then(text => { if (text) this.pasteText(text) }).catch(() => {})
+        return false
+      }
+      // App shortcuts (Cmd/Ctrl+T/D/…) pass through to App.vue's global keydown handler.
+      return !isAppShortcut(e)
+    })
 
     this.fitAddon = new FitAddon()
     this.xterm.loadAddon(this.fitAddon)

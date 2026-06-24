@@ -28,7 +28,7 @@ const defs: KeyBindingDef[] = [
 ]
 
 // macOS uses ⌘ (metaKey) as the shortcut modifier; every other platform uses Ctrl.
-const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPod|iPad/i.test(navigator.platform)
+export const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPod|iPad/i.test(navigator.platform)
 const PRIMARY_MOD_LABEL = IS_MAC ? '⌘' : 'Ctrl'
 
 function resolveBinding(id: string): KeyBinding {
