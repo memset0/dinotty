@@ -150,7 +150,7 @@ pub fn setup_zsh_title_hooks(home: &str) -> Option<std::path::PathBuf> {
 
     let zshrc = format!(
         r#"# dinotty title injection — loaded via ZDOTDIR
-ZDOTDIR=  # reset so child shells behave normally
+unset ZDOTDIR  # reset so child shells behave normally (unset, not empty: an exported empty ZDOTDIR makes child zsh look for startup files in the wrong place — e.g. a tmux server started from a dinotty terminal inherits ZDOTDIR= and every shell in it loses ~/.zshrc)
 
 [[ -f "{home}/.zshrc" ]] && source "{home}/.zshrc"
 
